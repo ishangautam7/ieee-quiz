@@ -1,15 +1,47 @@
 // app/page.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { quizLevels } from './quiz-data';
-import { Trophy, Star, User, Target, MessageCircle } from 'lucide-react';
+import { Trophy, Star, User, Target, MessageCircle, RotateCcw } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
+  const [viewedCount, setViewedCount] = useState(0);
+
+  useEffect(() => {
+    // Count total viewed questions for display
+    const saved = localStorage.getItem('viewedQuestions');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        let total = 0;
+        Object.values(parsed).forEach((questions: any) => {
+          total += questions.length;
+        });
+        setViewedCount(total);
+      } catch (error) {
+        console.error('Error loading viewed questions:', error);
+      }
+    }
+  }, []);
 
   const handleLevelSelect = (levelId: string) => {
     router.push(`/${levelId}`);
+  };
+
+  const handleResetProgress = () => {
+    localStorage.removeItem('viewedQuestions');
+    setViewedCount(0);
+    // Show a brief confirmation
+    const button = document.getElementById('reset-button');
+    if (button) {
+      button.textContent = 'Reset Complete!';
+      setTimeout(() => {
+        button.textContent = 'Reset Progress';
+      }, 2000);
+    }
   };
 
   return (
@@ -30,6 +62,25 @@ export default function Home() {
             Interactive Q&A platform for cybersecurity education. Select a difficulty level and choose specific 
             questions for targeted learning and assessment.
           </p>
+          
+          {/* Progress and Reset Section */}
+          <div className="mt-8 flex flex-col items-center space-y-4">
+            {viewedCount > 0 && (
+              <div className="bg-slate-800 bg-opacity-50 px-6 py-3 rounded-xl">
+                <p className="text-blue-300 font-semibold">
+                  Questions Viewed: <span className="text-white">{viewedCount}</span> / 15
+                </p>
+              </div>
+            )}
+            <button
+              id="reset-button"
+              onClick={handleResetProgress}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
+            >
+              <RotateCcw className="w-5 h-5 mr-2" />
+              Reset Progress
+            </button>
+          </div>
         </div>
 
         {/* Levels Grid */}

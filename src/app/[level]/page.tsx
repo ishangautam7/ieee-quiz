@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { quizLevels } from '../quiz-data';
-import { Home, ChevronRight } from 'lucide-react';
+import { Home } from 'lucide-react';
 
 export default function LevelPage() {
   const router = useRouter();
@@ -12,43 +12,69 @@ export default function LevelPage() {
   const levelId = params.level as string;
   const selectedLevel = quizLevels.find((level) => level.id === levelId);
 
-  const [answeredQuestions, setAnsweredQuestions] = useState<Record<string, Set<number>>>({});
+  const [viewedQuestions, setViewedQuestions] = useState<Record<string, Set<number>>>({});
 
   useEffect(() => {
-    const isPageRefresh = !sessionStorage.getItem('appLoaded');
-    if (isPageRefresh) {
-      localStorage.removeItem('answeredQuestions');
-      sessionStorage.setItem('appLoaded', 'true');
-    }
-
-    const saved = localStorage.getItem('answeredQuestions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const converted: Record<string, Set<number>> = {};
-        Object.keys(parsed).forEach((key) => {
-          converted[key] = new Set(parsed[key]);
-        });
-        setAnsweredQuestions(converted);
-      } catch (error) {
-        console.error('Error loading answered questions:', error);
+    // Load existing viewed questions from localStorage
+    const loadViewedQuestions = () => {
+      const saved = localStorage.getItem('viewedQuestions');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const converted: Record<string, Set<number>> = {};
+          Object.keys(parsed).forEach((key) => {
+            converted[key] = new Set(parsed[key]);
+          });
+          setViewedQuestions(converted);
+        } catch (error) {
+          console.error('Error loading viewed questions:', error);
+        }
       }
-    }
+    };
+
+    loadViewedQuestions();
+
+    // Listen for storage changes to update when returning from question pages
+    const handleStorageChange = () => {
+      loadViewedQuestions();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for focus events to catch localStorage changes from same tab
+    window.addEventListener('focus', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleStorageChange);
+    };
   }, []);
 
+  // Reload viewed questions when returning to this page
   useEffect(() => {
-    const toSave: Record<string, number[]> = {};
-    Object.keys(answeredQuestions).forEach((key) => {
-      toSave[key] = Array.from(answeredQuestions[key]);
-    });
-    localStorage.setItem('answeredQuestions', JSON.stringify(toSave));
-  }, [answeredQuestions]);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const saved = localStorage.getItem('viewedQuestions');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const converted: Record<string, Set<number>> = {};
+            Object.keys(parsed).forEach((key) => {
+              converted[key] = new Set(parsed[key]);
+            });
+            setViewedQuestions(converted);
+          } catch (error) {
+            console.error('Error loading viewed questions:', error);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const handleQuestionSelect = (questionId: number) => {
-    setAnsweredQuestions((prev) => ({
-      ...prev,
-      [levelId]: new Set([...(prev[levelId] || []), questionId]),
-    }));
     router.push(`/${levelId}/${questionId}`);
   };
 
@@ -60,7 +86,7 @@ export default function LevelPage() {
     return <div className="text-white text-center mt-20">Level not found</div>;
   }
 
-  const levelAnsweredQuestions = answeredQuestions[selectedLevel.id] || new Set();
+  const levelViewedQuestions = viewedQuestions[selectedLevel.id] || new Set();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
@@ -106,14 +132,14 @@ export default function LevelPage() {
           <h3 className="text-2xl font-bold text-white text-center mb-8">Choose a Question</h3>
           <div className="grid grid-cols-5 gap-6">
             {selectedLevel.questions.map((question) => {
-              const isAnswered = levelAnsweredQuestions.has(question.id);
+              const isViewed = levelViewedQuestions.has(question.id);
               return (
                 <button
                   key={question.id}
                   onClick={() => handleQuestionSelect(question.id)}
                   className={`aspect-square rounded-3xl text-3xl font-bold transition-all duration-300 transform hover:scale-110 shadow-2xl ${
-                    isAnswered
-                      ? 'bg-red-600 text-white border-4 border-red-400'
+                    isViewed
+                      ? 'bg-red-600 text-white border-4 border-red-400 shadow-red-500/50'
                       : `bg-gradient-to-br ${selectedLevel.color} text-white hover:shadow-lg`
                   }`}
                 >

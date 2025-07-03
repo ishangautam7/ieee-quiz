@@ -15,37 +15,33 @@ export default function QuestionPage() {
   const currentQuestion = selectedLevel?.questions.find((q) => q.id === questionId);
 
   const [showAnswer, setShowAnswer] = useState(false);
-  const [answeredQuestions, setAnsweredQuestions] = useState<Record<string, Set<number>>>({});
 
   useEffect(() => {
-    const saved = localStorage.getItem('answeredQuestions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const converted: Record<string, Set<number>> = {};
-        Object.keys(parsed).forEach((key) => {
-          converted[key] = new Set(parsed[key]);
-        });
-        setAnsweredQuestions(converted);
-      } catch (error) {
-        console.error('Error loading answered questions:', error);
+    // Mark the question as viewed immediately when the page loads
+    const markQuestionAsViewed = () => {
+      const saved = localStorage.getItem('viewedQuestions');
+      let viewedQuestions: Record<string, number[]> = {};
+      
+      if (saved) {
+        try {
+          viewedQuestions = JSON.parse(saved);
+        } catch (error) {
+          console.error('Error loading viewed questions:', error);
+        }
       }
-    }
 
-    // Mark the current question as answered
-    setAnsweredQuestions((prev) => ({
-      ...prev,
-      [levelId]: new Set([...(prev[levelId] || []), questionId]),
-    }));
+      if (!viewedQuestions[levelId]) {
+        viewedQuestions[levelId] = [];
+      }
+
+      if (!viewedQuestions[levelId].includes(questionId)) {
+        viewedQuestions[levelId].push(questionId);
+        localStorage.setItem('viewedQuestions', JSON.stringify(viewedQuestions));
+      }
+    };
+
+    markQuestionAsViewed();
   }, [levelId, questionId]);
-
-  useEffect(() => {
-    const toSave: Record<string, number[]> = {};
-    Object.keys(answeredQuestions).forEach((key) => {
-      toSave[key] = Array.from(answeredQuestions[key]);
-    });
-    localStorage.setItem('answeredQuestions', JSON.stringify(toSave));
-  }, [answeredQuestions]);
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
