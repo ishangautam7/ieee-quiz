@@ -85,23 +85,17 @@ export default function QuestionPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={handleBackToLevel}
-            className="flex items-center text-blue-400 hover:text-blue-300 transition-colors group"
-          >
-            <ChevronRight className="w-5 h-5 mr-2 rotate-180 group-hover:-translate-x-1 transition-transform" />
-            Back to Questions
-          </button>
+          <div className="w-24"></div>
           <div className="text-center">
             <h2 className="text-3xl font-bold text-white">{selectedLevel.title}</h2>
             <p className="text-gray-300">Question {questionId} of 20</p>
           </div>
           <button
-            onClick={handleBackToHome}
+            onClick={handleBackToLevel}
             className="flex items-center text-blue-400 hover:text-blue-300 transition-colors group"
           >
-            <Home className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Home
+            <ChevronRight className="w-5 h-5 mr-2 rotate-180 group-hover:-translate-x-1 transition-transform" />
+            Back
           </button>
         </div>
 
@@ -241,19 +235,13 @@ export default function QuestionPage() {
                   >
                     Try Again
                   </button>
-                  <button
-                    onClick={handleNextQuestion}
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
-                    Next Question
-                  </button>
                 </>
               ) : (
                 <button
-                  onClick={handleBackToLevel}
+                  onClick={handleBackToHome}
                   className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
                 >
-                  Back to Questions
+                  Back to Home
                 </button>
               )}
             </div>
