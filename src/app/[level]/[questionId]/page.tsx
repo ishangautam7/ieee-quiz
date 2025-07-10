@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { quizLevels } from '../../quiz-data';
-import { ChevronRight, Home, MessageCircle, Target, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronRight, Home, MessageCircle, Target, CheckCircle, XCircle, Edit3 } from 'lucide-react';
 
 export default function QuestionPage() {
   const router = useRouter();
@@ -14,8 +14,9 @@ export default function QuestionPage() {
   const selectedLevel = quizLevels.find((level) => level.id === levelId);
   const currentQuestion = selectedLevel?.questions.find((q) => q.id === questionId);
 
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [userAnswer, setUserAnswer] = useState<string>('');
   const [showResult, setShowResult] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
 
   useEffect(() => {
     // Mark the question as viewed immediately when the page loads
@@ -44,14 +45,44 @@ export default function QuestionPage() {
     markQuestionAsViewed();
   }, [levelId, questionId]);
 
-  const handleOptionSelect = (optionId: string) => {
-    if (!showResult) {
-      setSelectedOption(optionId);
+  const checkAnswer = (answer: string): boolean => {
+    if (!currentQuestion) return false;
+    
+    const normalizedAnswer = answer.toLowerCase().trim();
+    const normalizedCorrect = currentQuestion.correctAnswer.toLowerCase().trim();
+    
+    // Check exact match first
+    if (normalizedAnswer === normalizedCorrect) {
+      return true;
     }
+    
+    // Check acceptable answers
+    if (currentQuestion.acceptableAnswers) {
+      return currentQuestion.acceptableAnswers.some(acceptable => 
+        normalizedAnswer === acceptable.toLowerCase().trim() ||
+        normalizedAnswer.includes(acceptable.toLowerCase().trim()) ||
+        acceptable.toLowerCase().trim().includes(normalizedAnswer)
+      );
+    }
+    
+    // Check if the answer contains key words from the correct answer
+    const correctWords = normalizedCorrect.split(/[\s,]+/).filter(word => word.length > 2);
+    const answerWords = normalizedAnswer.split(/[\s,]+/).filter(word => word.length > 2);
+    
+    const matchingWords = correctWords.filter(word => 
+      answerWords.some(answerWord => 
+        answerWord.includes(word) || word.includes(answerWord)
+      )
+    );
+    
+    // Consider it correct if at least 60% of key words match
+    return matchingWords.length >= Math.ceil(correctWords.length * 0.6);
   };
 
   const handleSubmitAnswer = () => {
-    if (selectedOption) {
+    if (userAnswer.trim()) {
+      const correct = checkAnswer(userAnswer);
+      setIsCorrect(correct);
       setShowResult(true);
     }
   };
@@ -70,15 +101,14 @@ export default function QuestionPage() {
   };
 
   const handleTryAgain = () => {
-    setSelectedOption(null);
+    setUserAnswer('');
     setShowResult(false);
+    setIsCorrect(false);
   };
 
   if (!selectedLevel || !currentQuestion) {
     return <div className="text-white text-center mt-20">Question not found</div>;
   }
-
-  const isCorrect = selectedOption === currentQuestion.correctAnswer;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
@@ -114,9 +144,9 @@ export default function QuestionPage() {
                   <span
                     className={`inline-block px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r ${selectedLevel.color} text-white mb-2`}
                   >
-                    Multiple Choice
+                    Short Answer
                   </span>
-                  <h3 className="text-xl font-semibold text-gray-300">Select the correct answer</h3>
+                  <h3 className="text-xl font-semibold text-gray-300">Type your answer below</h3>
                 </div>
               </div>
             </div>
@@ -132,47 +162,39 @@ export default function QuestionPage() {
               </div>
             </div>
 
-            {/* Options */}
+            {/* Answer Input */}
             <div className="mb-8">
-              <h4 className="text-lg font-semibold text-purple-400 mb-4">Options</h4>
+              <h4 className="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+                <Edit3 className="w-5 h-5 mr-2" />
+                Your Answer
+              </h4>
               <div className="space-y-4">
-                {currentQuestion.options.map((option) => {
-                  let optionClass = "bg-slate-700 hover:bg-slate-600 border-slate-600";
-                  
-                  if (showResult) {
-                    if (option.id === currentQuestion.correctAnswer) {
-                      optionClass = "bg-green-600 border-green-500";
-                    } else if (option.id === selectedOption && option.id !== currentQuestion.correctAnswer) {
-                      optionClass = "bg-red-600 border-red-500";
-                    } else {
-                      optionClass = "bg-slate-700 border-slate-600";
-                    }
-                  } else if (selectedOption === option.id) {
-                    optionClass = "bg-blue-600 border-blue-500";
-                  }
-
-                  return (
-                    <button
-                      key={option.id}
-                      onClick={() => handleOptionSelect(option.id)}
-                      className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left ${optionClass}`}
-                      disabled={showResult}
-                    >
-                      <div className="flex items-center">
-                        <span className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white font-bold mr-4">
-                          {option.id.toUpperCase()}
-                        </span>
-                        <span className="text-white text-lg">{option.text}</span>
-                        {showResult && option.id === currentQuestion.correctAnswer && (
-                          <CheckCircle className="w-6 h-6 text-white ml-auto" />
-                        )}
-                        {showResult && option.id === selectedOption && option.id !== currentQuestion.correctAnswer && (
-                          <XCircle className="w-6 h-6 text-white ml-auto" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                <textarea
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  placeholder="Type your answer here..."
+                  disabled={showResult}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-white text-lg min-h-[120px] resize-none ${
+                    showResult
+                      ? isCorrect
+                        ? 'bg-green-600 border-green-500'
+                        : 'bg-red-600 border-red-500'
+                      : 'bg-slate-700 border-slate-600 hover:border-slate-500 focus:border-blue-500 focus:outline-none'
+                  }`}
+                  rows={4}
+                />
+                {showResult && (
+                  <div className="flex items-center">
+                    {isCorrect ? (
+                      <CheckCircle className="w-6 h-6 text-green-400 mr-2" />
+                    ) : (
+                      <XCircle className="w-6 h-6 text-red-400 mr-2" />
+                    )}
+                    <span className={`font-semibold ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                      {isCorrect ? 'Correct!' : 'Incorrect'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -181,9 +203,9 @@ export default function QuestionPage() {
               <div className="mb-8 text-center">
                 <button
                   onClick={handleSubmitAnswer}
-                  disabled={!selectedOption}
+                  disabled={!userAnswer.trim()}
                   className={`px-8 py-4 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                    selectedOption
+                    userAnswer.trim()
                       ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
@@ -193,24 +215,15 @@ export default function QuestionPage() {
               </div>
             ) : (
               <div className="mb-8">
-                {/* Result */}
-                <div className={`p-6 rounded-2xl mb-6 ${isCorrect ? 'bg-green-600' : 'bg-red-600'}`}>
-                  <div className="flex items-center mb-4">
-                    {isCorrect ? (
-                      <CheckCircle className="w-8 h-8 text-white mr-3" />
-                    ) : (
-                      <XCircle className="w-8 h-8 text-white mr-3" />
-                    )}
-                    <h4 className="text-2xl font-bold text-white">
-                      {isCorrect ? 'Correct!' : 'Incorrect'}
-                    </h4>
+                {/* Correct Answer Display */}
+                {!isCorrect && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-yellow-400 mb-4">Correct Answer:</h4>
+                    <div className="bg-green-600 rounded-2xl p-6 border border-green-500">
+                      <p className="text-white text-lg font-semibold">{currentQuestion.correctAnswer}</p>
+                    </div>
                   </div>
-                  {!isCorrect && (
-                    <p className="text-white text-lg">
-                      The correct answer is: <strong>{currentQuestion.options.find(opt => opt.id === currentQuestion.correctAnswer)?.text}</strong>
-                    </p>
-                  )}
-                </div>
+                )}
 
                 {/* Explanation */}
                 <div className="mb-6">
@@ -234,6 +247,12 @@ export default function QuestionPage() {
                     className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white px-8 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
                     Try Again
+                  </button>
+                  <button
+                    onClick={handleNextQuestion}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    Next Question
                   </button>
                 </>
               ) : (
