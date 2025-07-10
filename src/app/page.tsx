@@ -11,26 +11,37 @@ export default function Home() {
   const [viewedCount, setViewedCount] = useState(0);
 
   useEffect(() => {
-    // Force re-render when returning to page
-    const handleFocus = () => {
-      setViewedCount(prev => prev + 1);
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  const isQuestionViewed = (questionId: number) => {
+    // Count total viewed questions for display
     const saved = localStorage.getItem('viewedQuestions');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed?.cybersecurity?.includes(questionId) || false;
+        let total = 0;
+        Object.values(parsed).forEach((questions: any) => {
+          total += questions.length;
+        });
+        setViewedCount(total);
       } catch (error) {
-        return false;
+        console.error('Error loading viewed questions:', error);
       }
     }
-    return false;
+  }, []);
+
+  const handleStartQuiz = () => {
+    router.push('/cybersecurity');
+  };
+
+  const handleResetProgress = () => {
+    localStorage.removeItem('viewedQuestions');
+    setViewedCount(0);
+    // Show a brief confirmation
+    const button = document.getElementById('reset-button');
+    if (button) {
+      button.textContent = 'Reset Complete!';
+      setTimeout(() => {
+        button.textContent = 'Reset Progress';
+      }, 2000);
+    }
   };
 
   return (
@@ -48,36 +59,43 @@ export default function Home() {
             </div>
           </div>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          </p>
+        </div>
 
         {/* Main Quiz Card */}
-                <button
+        <button>
+        </button>
+
         {/* Features Section */}
-    {/* Question Numbers Grid */}
-    <div className="max-w-5xl mx-auto">
-      <h3 className="text-2xl font-bold text-white text-center mb-8">Choose a Question (1-20)</h3>
-      <div className="grid grid-cols-5 gap-6">
-        {quizLevels[0].questions.map((question) => {
-          const isViewed = isQuestionViewed(question.id);
-          return (
-            <button
-              key={question.id}
-              onClick={() => router.push(`/cybersecurity/${question.id}`)}
-              className={`aspect-square rounded-3xl text-3xl font-bold transition-all duration-300 transform hover:scale-110 shadow-2xl ${
-                isViewed
-                  ? 'bg-red-600 text-white border-4 border-red-400 shadow-red-500/50'
-                  : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg'
-              }`}
-            >
-              {question.id}
-            </button>
-          );
-        })}
-      </div>
-      <div className="text-center mt-8">
-        <p className="text-gray-400">
-          <span className="inline-block w-4 h-4 bg-red-600 rounded mr-2"></span>
-          Red indicates questions that have been attempted
-        </p>
+        {/* Question Numbers Grid */}
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-2xl font-bold text-white text-center mb-8">Choose a Question (1-20)</h3>
+          <div className="grid grid-cols-5 gap-6">
+            {quizLevels[0].questions.map((question) => {
+              const isViewed = viewedCount > 0 && localStorage.getItem('viewedQuestions') && 
+                JSON.parse(localStorage.getItem('viewedQuestions') || '{}')?.cybersecurity?.includes(question.id);
+              return (
+                <button
+                  key={question.id}
+                  onClick={() => router.push(`/cybersecurity/${question.id}`)}
+                  className={`aspect-square rounded-3xl text-3xl font-bold transition-all duration-300 transform hover:scale-110 shadow-2xl ${
+                    isViewed
+                      ? 'bg-red-600 text-white border-4 border-red-400 shadow-red-500/50'
+                      : 'bg-gradient-to-br from-blue-500 to-purple-600 text-white hover:shadow-lg'
+                  }`}
+                >
+                  {question.id}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-center mt-8">
+            <p className="text-gray-400">
+              <span className="inline-block w-4 h-4 bg-red-600 rounded mr-2"></span>
+              Red indicates questions that have been attempted
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
