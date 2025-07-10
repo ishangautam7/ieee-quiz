@@ -83,7 +83,7 @@ export default function LevelPage() {
   };
 
   if (!selectedLevel) {
-    return <div className="text-white text-center mt-20">Level not found</div>;
+    return <div className="text-white text-center mt-20">Quiz not found</div>;
   }
 
   const levelViewedQuestions = viewedQuestions[selectedLevel.id] || new Set();
@@ -102,7 +102,7 @@ export default function LevelPage() {
           </button>
           <div className="text-center">
             <h2 className="text-4xl font-bold text-white">{selectedLevel.title}</h2>
-            <p className="text-gray-300 text-lg">Select a question number to view</p>
+            <p className="text-gray-300 text-lg">Select any question number to start</p>
           </div>
           <div className="w-24"></div>
         </div>
@@ -111,25 +111,20 @@ export default function LevelPage() {
         <div className="max-w-4xl mx-auto mb-12">
           <div className={`bg-gradient-to-r ${selectedLevel.color} p-1 rounded-3xl shadow-2xl`}>
             <div className="bg-slate-800 p-8 rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <selectedLevel.icon className="w-12 h-12 text-white mr-4" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-white">{selectedLevel.title}</h3>
-                    <p className="text-gray-300">{selectedLevel.description}</p>
-                  </div>
+              <div className="flex items-center justify-center mb-6">
+                <selectedLevel.icon className="w-12 h-12 text-white mr-4" />
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-white">{selectedLevel.title}</h3>
+                  <p className="text-gray-300">{selectedLevel.description}</p>
                 </div>
-                <span className="px-4 py-2 bg-slate-700 rounded-full text-white font-semibold">
-                  {selectedLevel.difficulty}
-                </span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Question Numbers Grid */}
-        <div className="max-w-4xl mx-auto">
-          <h3 className="text-2xl font-bold text-white text-center mb-8">Choose a Question</h3>
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-2xl font-bold text-white text-center mb-8">Choose a Question (1-20)</h3>
           <div className="grid grid-cols-5 gap-6">
             {selectedLevel.questions.map((question) => {
               const isViewed = levelViewedQuestions.has(question.id);
@@ -151,7 +146,7 @@ export default function LevelPage() {
           <div className="text-center mt-8">
             <p className="text-gray-400">
               <span className="inline-block w-4 h-4 bg-red-600 rounded mr-2"></span>
-              Red indicates questions that have been viewed
+              Red indicates questions that have been attempted
             </p>
           </div>
         </div>
